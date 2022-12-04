@@ -1,0 +1,176 @@
+---
+title: 'Reporte Final Los Peces y el Mercurio: Procesamiento de Datos Multivariados'
+author: "Jorge Chávez Badillo A01749448"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: "Módulo 5 (Portafolio Implementación)"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Contaminación por Mercurio
+
+## Resumen 
+
+Para este reporte final del portafolio de implementación fue necesario utilizar diferentes modelos estadísticos para tratar el problema de contaminación de mercurio en lagos, ya que este es un tema sumamente importante, pues además de afectar la vida de los peces, también puede llegar a afectar de una forma fuerte la salud de los seres humanos si se consume un pescado contaminado por mercurio, por esta razón, fue necesario hacer un entendimiento de datos riguroso para poder decidir de qué manera implementar los modelos y que así se llegara a una conclusión sobre qué factores son los que tienen mayor efeto en la contaminación de los lagos. 
+
+En este trabajo se implementaron diferentes herramientas estadísticas, siendo las principales la prueba de normalidad para encontrar las variables normales y posteriormente la implementación del análisis de componentes principales para determinar los factores que más intervienen en el problema y se encontró que las variables que cuentan con un mayor nivel de contribución en los componentes son: $X11$ Estimación de la concentración de mercurio, $X7$ Concentración media de mercurio, $X10$ Máximo de concentración de mercurio, $X9$ Mínimo de concentración de mercurio, $X3$ Alcalinida y $X4$ PH, y además de ello, se encontró que las variables encontradas coinciden con las utilizadas en el bloque anterior. 
+
+## Introducción
+
+### Descripción del Problema
+
+La contaminación por mercurio de peces en el agua dulce comestibles es una amenaza directa contra nuestra salud. Se llevó a cabo un estudio reciente en 53 lagos de Florida con el fin de examinar los factores que influían en el nivel de contaminación por mercurio. Las variables que se midieron se encuentran en mercurio.csv   Descargar mercurio.csv   y su descripción es la siguiente: 
+
+- *X1* = número de indentificación
+- *X2* = nombre del lago
+- *X3* = alcalinidad (mg/l de carbonato de calcio)
+- *X4* = PH
+- *X5* = calcio (mg/l)
+- *X6* = clorofila (mg/l)
+- *X7* = concentración media de mercurio (parte por millón) en el tejido muscular del grupo de peces estudiados en cada lago
+- *X8* = número de peces estudiados en el lago
+- *X9* = mínimo de la concentración de mercurio en cada grupo de peces
+- *X10* = máximo de la concentración de mercurio en cada grupo de peces
+- *X11* = estimación (mediante regresión) de la concentración de mercurio en el pez de 3 años (o promedio de mercurio cuando la edad no está disponible)
+- *X12* = indicador de la edad de los peces (0: jóvenes; 1: maduros)
+
+Alrededor de la principal pregunta de investigación que surge en este estudio: ¿Cuáles son los principales factores que influyen en el nivel de contaminación por mercurio en los peces de los lagos de Florida? pueden surgir preguntas paralelas que desglosan esta pregunta general:
+
+1. ¿Hay evidencia para suponer que la concentración promedio de mercurio en los lagos es dañino para la salud humana? Considera que las normativas de referencia para evaluar los niveles máximos de Hg (Reglamento 34687-MAG y los reglamentos internacionales CE 1881/2006 y Codex Standard 193-1995) establecen que la concentración promedio de mercurio en productos de la pesca no debe superar los 0.5 mg de Hg/kg.
+
+2. ¿Habrá diferencia significativa entre la concentración de mercurio por la edad de los peces?
+
+3. Si el muestreo se realizó lanzando una red y analizando los peces que la red encontraba ¿Habrá influencia del número de peces encontrados en la concentración de mercurio en los peces?
+
+4. ¿Las concentraciones de alcalinidad, clorofila, calcio en el agua del lago influyen en la concentración de mercurio de los peces?
+
+Es muy importante el poder analizar estos datos, pues de alguna manera nos permite conocer y entender el comportamiento de la contaminación de lagos por mercurio, lo que en algún futuro puede ser de ayuda para evitar o disminuir esta problemática, pues esta tiene un nivel daño bastante elevado ya que es posible tener consecuencias negativas en la salud de los peces y la de los seres humanos. 
+
+## Análisis de Resultados
+
+### Implementación de Herramientas Estadísticas
+
+Para la solución de este problema, fue necesario utilizar como herramientas estadísticas el análisis de normalidad de las variables continuas para poder identificar variables normales, por otro lado, la segunda herramienta estadística implementada fue el análisis de componentes principales para poder identificar los componentes principales que intervienen en el problema de la contaminación por mercurio. 
+
+```{r}
+db_mercurio = read.csv("mercurio.csv")
+db_mercurio_num = db_mercurio[3:11]
+```
+
+### 1. Análisis de Normalidad
+
+Para la solución de este reporte es necesario hacer un análisis se normalidad de las variables continuas para identificar variables normales. 
+
+a) Como primer paso es necesario realizar las pruebas de Mardia y Anderson Darling para poder identificar las variables que son normales y detectar posible normalidad multivariada de grupos de variables.
+
+```{r}
+library(MVN)
+# Test de Multinormalidad: Método Sesgo y Kurtosis de Mardia
+mvn(db_mercurio_num, subset = NULL, mvn = "mardia", covariance = FALSE, showOutliers = FALSE, alpha = 0.05)
+```
+
+b) Como paso siguiente se procede a hacer la prueba de Mardia y Anderson Darling de las variables que si tuvieron normalidad en el inciso anterior, en adición a ello es importante tener una interpretación de los resultados obtenidos con base a ambas pruebas, así como en la interpretación del sesgo y la curtosis de cada una de ellas. 
+
+```{r}
+db_mercurio_norm = data.frame(db_mercurio_num$X4, db_mercurio_num$X10)
+mvn(db_mercurio_norm, subset = NULL, mvn = "mardia", covariance = FALSE, showOutliers = FALSE, alpha = 0.05)
+```
+
+Tanto la prueba de Mardia y Anderson Darling, arrojan como resultado que las variables, en efecto, provienen de una distribución normal y al observar el valor p de las estadísticas de asimetría y curtosis, tenemos que estos son mayores a el grado de significancia $\alpha = 0.05$ y por lo tanto se concluye que hay si existe normalidad multivariable. 
+
+Por otro lado, al enfocarse en los valores de la curtosis y el sesgo, tenemos que la curtosis cuenta con un valor de 0.25, lo que indica que la forma de la distribución normal es casi mesocúrtica ya que el coeficiente de curtosis se encuentra cercano al 0 y finalmente, el valor del sesgo es de 0.18, se puede decir que este es moderadamente simétrico debido a que el coeficiente se encuentra dentro del rango de 0 a 0.5.
+
+c) Gráfica de contorno de la normal multivariada obtenida en el inciso B.
+
+```{r}
+library(MVN)
+mvn(db_mercurio_norm, mvnTest = "hz", multivariatePlot = "contour")
+```
+
+d) Detección de datos atípicos o influyentes en la normal multivariada encontrada en el inciso B (con aydua de la distancia de Mahalanobis y del gráfico QQplot multivariado).
+
+```{r}
+library(MVN)
+p = 2 # Indica que se trata de dos variables
+# Vector de medias
+X = colMeans(db_mercurio_norm)
+# Matriz de covarianza
+S = cov(db_mercurio_norm)
+# Distancia de Mahalanobis
+d2M = mahalanobis(db_mercurio_norm, X, S)
+
+# Multinormalidad Test gráfico Q-Q Plot
+plot(qchisq(((1:nrow(db_mercurio_norm)) - 1 / 2) / nrow(db_mercurio_norm), df = p), sort(d2M))
+abline(a = 0, b = 1, col = "red")
+```
+
+De acuerdo con el test de multinormalidad de Q-Q Plot y utilizando al distancia de Mahalanobis, podemos observar que los datos tienen una asimetría negativa con sesgo a la izquierda. 
+
+### 2. Análisis de Componentes Principales
+
+Ahora, se procede a realizar el análisis de componentes principales con la base de datos completa para poder identificar los factores principales que intervienen en el problema de la contaminación por mercurio de los peces en agua dulce.
+
+a) Antes de comenzar con el análisis de componentes principales es necesario justificar por qué es adecuado el uso de esta herramienta estadística para el análisis de esta base de datos usando la matriz de correlaciones.
+
+```{r}
+library(corrplot)
+correlationMatrix = cor(db_mercurio_num)
+correlationMatrix
+corrplot(cor(db_mercurio_num), method = "color", col = COL1("Greens"), addCoef.col = "black", cl.pos = "n", tl.col = "black", main = "Matriz de Correlación", mar = c(0, 0, 1, 0))
+```
+
+El método de componentes principales busca representar una matriz de datos mediante variables con poca pérdida de información, donde las variables son combinaciones lineales de las originales, es decir, de los componentes, dando como resultado componentes con un alto porcentaje de la información y se busca principalmente reducir la dimensionalidad del conjunto de los datos y además, como podemos observar en la matriz de correlacion, la mayoría de las variables tienen un coeficiente aceptable de correlación, lo cual es muy bueno ya que con ello se cumplen los supuestos de los componentes principales, los cuales mencionan que las variables tienen que estar correlacionadas y deben de ser numéricas.
+
+b) Ahora, se procede a hacer el análisis de componentes principales justificando el número de componentes principales apropiados para reducir la dimensión de la base.
+
+```{r}
+cpa <- prcomp(db_mercurio_num, scale=TRUE)
+summary(cpa)
+```
+
+En el caso de este problema, el número apropiado de componentes principales sería dos ya que los dos primeros componentes son los que explican mayormente la información de la base de datos y los componentes restantes son menos significantes para la explicación del porcentaje de varianza; observando los resultados se tiene que el componente número 1 explica el 59% de la información, mientras que el segundo explica solo el 13% de la misma, sin embargo, se tiene que el porcentaje de varianza explicado por ambos componentes principales es del 72%.
+
+c) Representación en un gráfico sobre los vectores asociados a las variables y las puntuaciones de las observaciones de las dos primeras componentes.
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+library(ggplot2) 
+
+cp3 = PCA(db_mercurio_num)
+fviz_pca_ind(cp3, col.ind = "blue", addEllipses = TRUE, repel = TRUE)
+fviz_screeplot(cp3)
+fviz_contrib(cp3, choice = c("var"))
+```
+
+d) Interpretación de los resultados. Explique brevemente a qué conclusiones llega con su análisis y qué significado tienen los componentes seleccionados en el contexto del problema.
+
+Con respecto a las gráficas anteriores podemos observar que los primeros dos compontentes son los que mayor importancia tienen y de acuerdo con el último gráfico de barras podemos observar que las variables $X11, X7, X10, X9, X3 y X4$ son las que cuentan con una mayor contribución en los componentes ya que estas se encuentran por encima de la media de los coeficientes de contribución.
+
+## Conclusión
+
+Emite una conclusión general: Une las conclusiones aquí obtenidas con las ya obtenidas en el análisis que ya habías realizada anteriormente, ¿de qué forma te ayuda este nuevo análisis a contestar la pregunta principal del estudio:  ¿Cuáles son los principales factores que influyen en el nivel de contaminación por mercurio en los peces de los lagos de Florida? ¿en qué puede facilitar el estudio la normalidad encontrada en un grupo de variables detectadas? ¿cómo te ayudan los componentes principales a abordar este problema?
+
+Gracias a la implementación del método de componentes principales, fue posible identificar qué componentes son los más importantes y que brindan una mayor información para poder hacer los análisis necesarios para poder responder a la pregunta principal de estudio, en este análisis de concluyó que las variables de la base de datos que cuentan con un mayor nivel de contribución en los componentes son: 
+
+- $X11$ Estimación de la concentración de mercurio. 
+- $X7$ Concentración media de mercurio. 
+- $X10$ Máximo de concentración de mercurio. 
+- $X9$ Mínimo de concentración de mercurio.
+- $X3$ Alcalinidad
+- $X4$ PH
+
+Respondiendo a la pregunta sobre la normalidad en un grupo de variables, es posible afirmar que aunque al utilizar el método de componentes principales no se requiere el cumplimiento del supuesto de normalidad, es importante destacar que cuando las variables cuentan con normalidad, los componentes tienen interpretaciones mucho más detalladas y brindan mayor información. 
+
+Dado que los componentes principales buscan las direcciones de las proyecciones que conserven más las propiedades de los datos, donde generalmente se tiene una mayor variabilidad, se puede concluir que los componentes principales son una herramienta de gran ayuda para este problema pues al tener una cantidad significante de diferentes variables numéricas este método nos permite encontrar los componentes con las combinaciones lineales que brinden mayor información para el análisis de los datos, logrando así disminuir la dimensionalidad del conjunto de datos, así como la evaluación de la semejanza entre los individuos a través de las semejanzas entre ellos o la topología entre individuos. 
+
+De acuerdo con el análisis que se realizó en el bloque anterior y comparándolo directamente con lo que se obtuvo en este análisis, tenemos que coinciden las variables que son más importantes en el nivel de contribución de los componentes con las variables que mejor funcionaron para la regresión múltiple de la entrega anterior; concluyendo así que los factores que tienen un mayor efecto en la contaminación por mercurio en los peces de los lagos de Florida son la alcalinidad, el ph, ya que estos dos fueron los que coincidieron al utilizar componentes principales y el análisis de la entrega anterior.
+
+## Anexos
+
+Liga de Github: https://github.com/A01749448/portafolio-implementacion
